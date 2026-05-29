@@ -37,9 +37,13 @@
 #include "../../home/serial.h"
 #include <setjmp.h>
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#endif
+
 extern jmp_buf reset_point;
 
-#if defined(NETWORKING_SUPPORT)
+#if defined(NETWORKING_SUPPORT) && defined(USE_SDLNET) && USE_SDLNET
 #if defined(_MSC_VER)
 #include "SDL_net.h"
 #else
@@ -68,6 +72,24 @@ struct priv_t priv =
         .rom = NULL,
         .cart_ram = NULL};
 
+#if defined(__EMSCRIPTEN__)
+EMSCRIPTEN_KEEPALIVE
+void wasm_set_joypad_key(int key, int pressed) {
+    if (key < 0 || key > 7)
+        return;
+
+    if (pressed)
+        gb.direct.joypad &= (uint8_t)~(1u << key);
+    else
+        gb.direct.joypad |= (uint8_t)(1u << key);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_get_joypad(void) {
+    return gb.direct.joypad;
+}
+#endif
+
 /* Must be freed */
 SDL_Renderer *renderer;
 SDL_Texture *texture;
@@ -78,7 +100,11 @@ SDL_Renderer *dbg_renderer;
 #endif
 SDL_GameController *controller = NULL;
 
+#if defined(__EMSCRIPTEN__)
+char *rom_file_name = "/save/baserom.gbc";
+#else
 char *rom_file_name = "baserom.gbc";
+#endif
 char *save_file_name = NULL;
 char *save_file2_name = NULL;
 
@@ -3333,6 +3359,16 @@ void write_cart_ram_file(const char *save_file_name, const char *save_file2_name
     fclose(f);
 }
 
+#if defined(__EMSCRIPTEN__)
+EMSCRIPTEN_KEEPALIVE
+void wasm_flush_save(void) {
+    if (save_file_name == NULL || save_file2_name == NULL || priv.cart_ram == NULL)
+        return;
+
+    write_cart_ram_file(save_file_name, save_file2_name, &priv.cart_ram, gb_get_save_size());
+}
+#endif
+
 /**
  * Handles an error reported by the emulator. The emulator context may be used
  * to better understand why the error given in gb_err was reported.
@@ -3496,7 +3532,9 @@ void get_input(void) {
                         break;
 
                     case SDLK_r:
+#if !defined(__EMSCRIPTEN__)
                         SoftReset(RESET_TYPE_RESET);
+#endif
                         break;
                 }
 
@@ -3648,10 +3686,11 @@ void sdl_loop(void) {
             }
         }
 
-        /* This will delay for at least the number of
-         * milliseconds requested, so we have to compensate for
-         * error here too. */
+        /* Browser builds are paced by emscripten_set_main_loop/RAF.
+         * SDL_Delay blocks the page main thread in Safari. */
+#if !defined(__EMSCRIPTEN__)
         SDL_Delay(delay);
+#endif
 
         after_delay_ticks = SDL_GetTicks();
         speed_compensation += (double)delay -
@@ -3937,7 +3976,11 @@ int main(int argc, char* argv[]) {
         want.freq = AUDIO_SAMPLE_RATE;
         want.format = AUDIO_S16SYS,
         want.channels = 2;
+#if defined(__EMSCRIPTEN__)
+        want.samples = 2048;
+#else
         want.samples = AUDIO_SAMPLES;
+#endif
         want.callback = audio_callback;
         want.userdata = NULL;
 
@@ -3948,6 +3991,7 @@ int main(int argc, char* argv[]) {
             printf("SDL could not open audio device: %s\n", SDL_GetError());
             exit(EXIT_FAILURE);
         }
+        printf("Audio opened: %d Hz, %u samples\n", have.freq, have.samples);
 
         audio_init();
         SDL_PauseAudioDevice(dev, 0);
@@ -4067,11 +4111,15 @@ int main(int argc, char* argv[]) {
     Bankswitch(0);
     gb.cpu_reg.sp = 0xFFFE;
 
+#if defined(__EMSCRIPTEN__)
+    emscripten_set_main_loop(Intro_Jumptable, 0, 1);
+#else
     while (SDL_QuitRequested() == SDL_FALSE) {
         /* Execute CPU cycles until the screen has to be redrawn. */
         // gb_run_frame();
         Intro_Jumptable();
     }
+#endif
 
 quit:
     MobileQuit();

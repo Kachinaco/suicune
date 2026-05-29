@@ -14,8 +14,6 @@
 #define ENABLE_HIPASS 1
 
 #define DMG_CLOCK_FREQ_U	((unsigned)DMG_CLOCK_FREQ)
-#define AUDIO_NSAMPLES		(AUDIO_SAMPLES * 2u)
-
 #define AUDIO_MEM_SIZE		(0xFF3F - 0xFF10 + 1)
 #define AUDIO_ADDR_COMPENSATION	0xFF10
 
@@ -203,7 +201,7 @@ static void update_sweep(struct chan *c)
 	}
 }
 
-static void update_square(int16_t *samples, const bool ch2)
+static void update_square(int16_t *samples, size_t nsamples, const bool ch2)
 {
 	uint32_t freq;
 	struct chan* c = chans + ch2;
@@ -215,7 +213,7 @@ static void update_square(int16_t *samples, const bool ch2)
 	set_note_freq(c, freq);
 	c->freq_inc *= 8;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i += 2) {
+	for (size_t i = 0; i < nsamples; i += 2) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -264,7 +262,7 @@ static uint8_t wave_sample(const unsigned int pos, const unsigned int volume)
 	return volume ? (sample >> (volume - 1)) : 0;
 }
 
-static void update_wave(int16_t *samples)
+static void update_wave(int16_t *samples, size_t nsamples)
 {
 	uint32_t freq;
 	struct chan *c = chans + 2;
@@ -277,7 +275,7 @@ static void update_wave(int16_t *samples)
 
 	c->freq_inc *= 32;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i += 2) {
+	for (size_t i = 0; i < nsamples; i += 2) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -319,7 +317,7 @@ static void update_wave(int16_t *samples)
 	}
 }
 
-static void update_noise(int16_t *restrict samples)
+static void update_noise(int16_t *restrict samples, size_t nsamples)
 {
 	struct chan *c = chans + 3;
 
@@ -339,7 +337,7 @@ static void update_noise(int16_t *restrict samples)
 	if (c->freq >= 14)
 		c->enabled = 0;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i += 2) {
+	for (size_t i = 0; i < nsamples; i += 2) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -390,16 +388,18 @@ static void update_noise(int16_t *restrict samples)
 void audio_callback(void *userdata, uint8_t *stream, int len)
 {
 	int16_t *samples = (int16_t *)stream;
+	size_t nsamples = (size_t)len / sizeof(*samples);
+	nsamples &= ~(size_t)1;
 
 	/* Appease unused variable warning. */
 	(void)userdata;
 
 	memset(samples, 0, len);
 
-	update_square(samples, 0);
-	update_square(samples, 1);
-	update_wave(samples);
-	update_noise(samples);
+	update_square(samples, nsamples, 0);
+	update_square(samples, nsamples, 1);
+	update_wave(samples, nsamples);
+	update_noise(samples, nsamples);
 }
 
 static void chan_trigger(uint_fast8_t i)
