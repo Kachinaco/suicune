@@ -178,7 +178,13 @@
     @media (hover: none) and (pointer: coarse) and (orientation: portrait), (max-width: 520px) and (orientation: portrait) {
       .stage {
         align-items: flex-start;
-        padding-top: max(58px, calc(env(safe-area-inset-top) + 48px));
+        padding-top: max(42px, calc(env(safe-area-inset-top) + 36px));
+      }
+      canvas.emscripten {
+        width: min(106.6667dvh, 924px);
+        height: min(60dvh, 520px);
+        max-width: none;
+        max-height: none;
       }
       .touch-dpad {
         left: max(12px, env(safe-area-inset-left));
@@ -197,6 +203,22 @@
         height: clamp(52px, 15vw, 68px);
       }
       .touch-menu { bottom: max(12px, env(safe-area-inset-bottom)); }
+    }
+
+    @media (hover: none) and (pointer: coarse) and (orientation: portrait) and (max-height: 740px), (max-width: 520px) and (orientation: portrait) and (max-height: 740px) {
+      .stage { padding-top: max(36px, calc(env(safe-area-inset-top) + 30px)); }
+      canvas.emscripten {
+        width: min(96dvh, 640px);
+        height: min(54dvh, 360px);
+      }
+      .touch-dpad {
+        bottom: max(70px, calc(env(safe-area-inset-bottom) + 58px));
+        grid-template-columns: repeat(3, clamp(38px, 13vw, 52px));
+        grid-template-rows: repeat(3, clamp(38px, 13vw, 52px));
+      }
+      .touch-actions {
+        bottom: max(96px, calc(env(safe-area-inset-bottom) + 82px));
+      }
     }
   </style>
 </head>
