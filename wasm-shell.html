@@ -281,6 +281,7 @@
     }
     var heldJoypadKeys = {};
     var touchKeyPressCounts = {};
+    var touchButtonPressCounts = new WeakMap();
     var activeTouchPointers = {};
     var restartInProgress = false;
     function joypadKeyFromEvent(event) {
@@ -308,6 +309,7 @@
     function clearJoypadKeys() {
       heldJoypadKeys = {};
       touchKeyPressCounts = {};
+      touchButtonPressCounts = new WeakMap();
       activeTouchPointers = {};
       document.querySelectorAll('.touch-button.is-pressed').forEach(function(button) {
         button.classList.remove('is-pressed');
@@ -429,12 +431,59 @@
       }
       updateJoypadKeyState(key);
     }
+    function getTouchButtonKey(button) {
+      if (!button) {
+        return null;
+      }
+      var key = Number(button.dataset.key);
+      return Number.isInteger(key) ? key : null;
+    }
+    function isDpadButton(button) {
+      return !!(button && button.closest('.touch-dpad'));
+    }
+    function setTouchButtonPressed(button, pressed) {
+      if (!button) {
+        return;
+      }
+      var current = touchButtonPressCounts.get(button) || 0;
+      var next = Math.max(0, current + (pressed ? 1 : -1));
+      if (next) {
+        touchButtonPressCounts.set(button, next);
+        button.classList.add('is-pressed');
+      } else {
+        touchButtonPressCounts.delete(button);
+        button.classList.remove('is-pressed');
+      }
+    }
+    function getTouchButtonAtPoint(clientX, clientY) {
+      var element = document.elementFromPoint(clientX, clientY);
+      if (!element || !element.closest) {
+        return null;
+      }
+      return element.closest('button[data-key]');
+    }
+    function switchTouchPointerButton(pointerId, nextButton) {
+      var active = activeTouchPointers[pointerId];
+      if (!active || !active.isDpad || !isDpadButton(nextButton) || nextButton === active.button) {
+        return;
+      }
+      var nextKey = getTouchButtonKey(nextButton);
+      if (nextKey === null) {
+        return;
+      }
+      setTouchButtonPressed(active.button, false);
+      setTouchKey(active.key, false);
+      active.button = nextButton;
+      active.key = nextKey;
+      setTouchButtonPressed(active.button, true);
+      setTouchKey(active.key, true);
+    }
     function releaseTouchPointer(pointerId) {
       var active = activeTouchPointers[pointerId];
       if (!active) {
         return;
       }
-      active.button.classList.remove('is-pressed');
+      setTouchButtonPressed(active.button, false);
       setTouchKey(active.key, false);
       delete activeTouchPointers[pointerId];
     }
@@ -452,17 +501,31 @@
           }
           return;
         }
-        var key = Number(button.dataset.key);
-        if (!Number.isInteger(key)) {
+        var key = getTouchButtonKey(button);
+        if (key === null) {
           return;
         }
-        button.classList.add('is-pressed');
-        activeTouchPointers[event.pointerId] = { button: button, key: key };
+        setTouchButtonPressed(button, true);
+        activeTouchPointers[event.pointerId] = {
+          button: button,
+          key: key,
+          isDpad: isDpadButton(button)
+        };
         setTouchKey(key, true);
         try {
           button.setPointerCapture(event.pointerId);
         } catch (error) {
           // Some mobile browsers reject pointer capture during synthetic tests.
+        }
+      }, { capture: true });
+      touchControlsElement.addEventListener('pointermove', function(event) {
+        var active = activeTouchPointers[event.pointerId];
+        if (!active) {
+          return;
+        }
+        consumeGameKeyEvent(event);
+        if (active.isDpad) {
+          switchTouchPointerButton(event.pointerId, getTouchButtonAtPoint(event.clientX, event.clientY));
         }
       }, { capture: true });
       ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function(type) {
@@ -546,7 +609,7 @@
       totalDependencies: 0,
       locateFile: function(path, prefix) {
         if (path === 'index.wasm' || path === 'index.data') {
-          return prefix + path + '?v=20260528-1743';
+          return prefix + path + '?v=20260528-1804';
         }
         return prefix + path;
       },
