@@ -16,28 +16,25 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body { display: grid; grid-template-rows: auto 1fr; }
-    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: #0b1720; }
+    header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: #0b1720; }
     h1 { margin: 0; font-size: 18px; font-weight: 700; }
-    .keys { color: var(--muted); font-size: 13px; }
-    .logout-button {
-      appearance: none;
-      border: 1px solid rgba(110, 231, 216, 0.42);
-      border-radius: 6px;
-      background: #10202a;
-      color: var(--text);
+    .auth-logout {
+      margin: 0;
+      padding: 7px 12px;
+      border: 1px solid #2f505a;
+      border-radius: 999px;
+      background: rgba(23, 45, 57, 0.7);
+      color: #d8fdff;
+      font-size: 13px;
       cursor: pointer;
-      font: 700 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      padding: 8px 11px;
+      appearance: none;
+      -webkit-appearance: none;
+      pointer-events: auto;
+      z-index: 40;
     }
-    .logout-button:hover,
-    .logout-button:focus-visible {
-      border-color: rgba(110, 231, 216, 0.72);
-      box-shadow: 0 0 0 2px rgba(110, 231, 216, 0.18);
-      outline: none;
-    }
-    .logout-button:disabled {
-      cursor: wait;
-      opacity: 0.68;
+    .auth-logout:hover {
+      background: rgba(110, 231, 216, 0.18);
+      color: #ecfdff;
     }
     main { display: grid; place-items: center; padding: 16px; }
     .stage { position: relative; width: min(100%, 960px); display: grid; gap: 12px; justify-items: center; }
@@ -46,9 +43,240 @@
     #status { color: var(--accent); min-height: 20px; font-size: 14px; }
     progress { width: min(100%, 420px); height: 8px; accent-color: var(--accent); }
     .note { color: var(--muted); font-size: 13px; text-align: center; max-width: 760px; }
+    .hidden { display: none !important; }
+    #auth-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      background-color: #071016;
+      background-image: linear-gradient(rgba(7, 16, 22, 0.72), rgba(7, 16, 22, 0.84)), url('login-desktop-overlay-chatgpt.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      padding: 18px;
+      box-sizing: border-box;
+      --field-left: 60.85%;
+      --field-width: 27.75%;
+      --field-gap: 8px;
+      --field-height: 7.9%;
+      --user-top: 40.35%;
+      --pass-top: 47.8%;
+      --actions-top: 58.95%;
+      --actions-left: 58.45%;
+      --actions-width: 27.75%;
+      --status-top: 73.2%;
+      --toggle-top: 79.2%;
+    }
+    #auth-overlay .card {
+      position: relative;
+      width: min(860px, 92vw);
+      aspect-ratio: 1672 / 941;
+      max-height: min(72vh, 540px);
+      border-radius: 16px;
+      border: 0;
+      padding: 0;
+      overflow: hidden;
+      box-shadow: none;
+      background: url('login-desktop-overlay-chatgpt.png') center / cover no-repeat;
+      backdrop-filter: none;
+    }
+    #auth-overlay h2 {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      visibility: hidden;
+      width: 0;
+      height: 0;
+    }
+    #auth-overlay .field {
+      margin-bottom: 10px;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      pointer-events: none;
+    }
+    #auth-overlay .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      border: 0;
+      white-space: nowrap;
+    }
+    #auth-overlay label { display: block; }
+    #auth-overlay input {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+      color: #ffffff;
+      caret-color: #ffffff;
+      -webkit-text-fill-color: #ffffff;
+      appearance: none;
+      -webkit-appearance: none;
+      font-size: 16px;
+      padding: 6px 12% 6px 6%;
+      letter-spacing: 0.25px;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+      outline: 0;
+      box-shadow: none;
+      border-radius: 0;
+      pointer-events: auto;
+    }
+    #auth-overlay input::placeholder {
+      color: transparent;
+    }
+    #auth-form .field-username,
+    #auth-form .field-password {
+      position: absolute;
+      left: var(--field-left);
+      width: var(--field-width);
+      height: var(--field-height);
+      top: var(--user-top);
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      border-radius: 0;
+      pointer-events: auto;
+    }
+    #auth-form .field-password {
+      top: var(--pass-top);
+    }
+    #auth-error,
+    #auth-success {
+      position: absolute;
+      left: 50%;
+      top: var(--status-top);
+      transform: translateX(-50%);
+      width: 100%;
+      text-align: center;
+      pointer-events: none;
+    }
+    #auth-overlay button {
+      display: block;
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      color: #ffffff;
+      -webkit-text-fill-color: #ffffff;
+      font-size: clamp(18px, 2.4vw, 26px);
+      font-weight: 700;
+      border-radius: 0;
+      padding: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      text-shadow: none;
+      outline: 0;
+      box-shadow: none;
+    }
+    #auth-overlay .actions {
+      margin: 0;
+      position: absolute;
+      left: var(--actions-left);
+      width: var(--actions-width);
+      top: var(--actions-top);
+      height: var(--field-height);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    #auth-error { color: #ff8b8b; min-height: 18px; font-size: 13px; margin-top: 8px; }
+    #auth-success { color: #aef5ef; min-height: 18px; font-size: 13px; margin-top: 8px; }
+    #auth-toggle {
+      position: absolute;
+      left: 50%;
+      top: calc(var(--status-top) + 26px);
+      transform: translateX(-50%);
+      display: block;
+      color: #89d3fb;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 13px;
+      width: 100%;
+      text-align: center;
+    }
+    .auth-footnote {
+      color: #dbf7f5;
+      font-size: 12px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      text-align: center;
+      bottom: 18px;
+    }
     .touch-controls { display: none; }
 
     @media (hover: none) and (pointer: coarse), (max-width: 820px) {
+      #auth-overlay {
+        padding: 0;
+        background-color: #000;
+        background-image: none;
+        --field-left: 14.65%;
+        --field-width: 71.28%;
+        --field-height: 5.55%;
+        --user-top: 62.9%;
+        --pass-top: 69.52%;
+        --actions-top: 76.46%;
+        --actions-left: 12.65%;
+        --actions-width: 71.28%;
+        --toggle-top: 94.1%;
+        --status-top: 82.6%;
+      }
+      #auth-overlay .card {
+        width: min(100vw, calc(100dvh * 853 / 1844));
+        height: min(100dvh, calc(100vw * 1844 / 853));
+        max-width: none;
+        max-height: none;
+        aspect-ratio: 853 / 1844;
+        border-radius: 0;
+        background: url('login-mobile-overlay-chatgpt.png') center / contain no-repeat;
+      }
+      #auth-overlay .field,
+      #auth-overlay .actions,
+      #auth-overlay #auth-toggle,
+      #auth-overlay .auth-footnote,
+      #auth-overlay #auth-error,
+      #auth-overlay #auth-success {
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+      }
+      #auth-overlay .auth-footnote,
+      #auth-overlay #auth-toggle {
+        font-size: 12px;
+      }
+      #auth-overlay h2 {
+        font-size: 0;
+      }
+      #auth-overlay input {
+        padding-left: 17%;
+        padding-right: 14%;
+      }
+      #auth-overlay button {
+        color: #ffffff;
+        -webkit-text-fill-color: #ffffff;
+        font-size: clamp(18px, 5.2vw, 26px);
+        letter-spacing: 0;
+        text-shadow: 0 1px 4px rgba(0, 20, 65, 0.45);
+      }
+      #auth-overlay #auth-toggle {
+        top: var(--toggle-top);
+        width: 48%;
+        height: 4%;
+        color: transparent;
+        text-decoration: none;
+        font-size: 1px;
+      }
+      #auth-overlay .auth-footnote {
+        display: none;
+      }
       html, body { width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; overscroll-behavior: none; background: #000; }
       *, *::before, *::after {
         -webkit-user-select: none;
@@ -66,21 +294,13 @@
         padding: 0;
         border: 0;
         background: transparent;
-        pointer-events: none;
       }
       h1 { font-size: 13px; text-shadow: 0 1px 8px #000; opacity: 0.85; }
-      .keys { display: none; }
-      .logout-button {
+      .auth-logout {
         pointer-events: auto;
-        margin-left: auto;
-        border-radius: 999px;
-        background: rgba(6, 17, 24, 0.62);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
-        color: rgba(230, 244, 241, 0.9);
-        padding: 7px 10px;
-        text-shadow: 0 1px 8px #000;
-        backdrop-filter: blur(3px);
-        -webkit-backdrop-filter: blur(3px);
+        padding: 6px 10px;
+        font-size: 12px;
+        margin: 0;
       }
       main {
         width: 100vw;
@@ -263,13 +483,11 @@
       }
     }
   </style>
-  <script src="/t/tracker.js" data-api="/t/api/track" async></script>
+  <script src="/t/tracker.js" data-api="/t/api/track" defer></script>
 </head>
 <body>
   <header>
-    <h1>suiCune</h1>
-    <div class="keys">Move: arrows | A: Z | B: X | Start: Enter | Select: Backspace | Reset: R</div>
-    <button class="logout-button" id="logout-button" type="button">Logout</button>
+    <button id="auth-logout" class="auth-logout hidden" type="button">Logout</button>
   </header>
   <main>
     <div class="stage">
@@ -301,12 +519,318 @@
       <div class="note">Click the game screen once before using the keyboard.</div>
     </div>
   </main>
+  <div id="auth-overlay">
+    <form class="card" id="auth-form" autocomplete="on">
+      <h2 id="auth-title">Play with account</h2>
+      <div class="field field-username">
+        <label for="auth-username" class="sr-only">Username</label>
+        <input id="auth-username" placeholder="Login" autocomplete="username" required />
+      </div>
+      <div class="field field-password">
+        <label for="auth-password" class="sr-only">Password</label>
+        <input id="auth-password" type="password" placeholder="Password" autocomplete="current-password" required />
+      </div>
+      <div class="actions">
+        <button type="submit" id="auth-submit">Sign in</button>
+      </div>
+      <span id="auth-error" role="status" aria-live="polite"></span>
+      <span id="auth-success" role="status" aria-live="polite"></span>
+      <a id="auth-toggle" href="#">Need to create an account?</a>
+      <div class="auth-footnote">Login is stored on this domain and tied to your save files.</div>
+    </form>
+  </div>
   <script>
     var statusElement = document.getElementById('status');
     var progressElement = document.getElementById('progress');
     var canvasElement = document.getElementById('canvas');
-    var logoutButtonElement = document.getElementById('logout-button');
     var touchControlsElement = document.querySelector('.touch-controls');
+    var authOverlayElement = document.getElementById('auth-overlay');
+    var authFormElement = document.getElementById('auth-form');
+    var authTitleElement = document.getElementById('auth-title');
+    var authUsernameElement = document.getElementById('auth-username');
+    var authPasswordElement = document.getElementById('auth-password');
+    var authSubmitButton = document.getElementById('auth-submit');
+    var authLogoutButton = document.getElementById('auth-logout');
+    var authToggleElement = document.getElementById('auth-toggle');
+    var authErrorElement = document.getElementById('auth-error');
+    var authSuccessElement = document.getElementById('auth-success');
+    var authMode = 'login';
+    var authIsSubmitting = false;
+    var authUserId = null;
+    var authUsername = '';
+    var isGameBooted = false;
+    var gameHasUser = false;
+    var gameRuntimeReady = false;
+    var saveSyncInProgress = false;
+    var saveSyncQueued = false;
+    var saveSyncTimer = null;
+    var assetVersion = '20260604-gbc-authlogout';
+    function setGameStatus(text) {
+      if (statusElement) {
+        statusElement.textContent = text;
+      }
+    }
+    function sanitizeText(value) {
+      return String(value || '').trim();
+    }
+    function setAuthMessage(type, message) {
+      if (type === 'error') {
+        authErrorElement.textContent = message || '';
+        authSuccessElement.textContent = '';
+      } else {
+        authSuccessElement.textContent = message || '';
+        authErrorElement.textContent = '';
+      }
+    }
+    function clearAuthMessages() {
+      setAuthMessage('error', '');
+      setAuthMessage('success', '');
+    }
+    function showAuthError(message) {
+      setAuthMessage('error', message);
+    }
+    function showAuthSuccess(message) {
+      setAuthMessage('success', message);
+    }
+    function showAuthOverlay() {
+      setAuthHeaderState(false);
+      if (authOverlayElement) {
+        authOverlayElement.classList.remove('hidden');
+      }
+      if (authFormElement) {
+        authFormElement.querySelector('input') && authFormElement.querySelector('input').focus();
+      }
+    }
+    function hideAuthOverlay() {
+      if (authOverlayElement) {
+        authOverlayElement.classList.add('hidden');
+      }
+      clearAuthMessages();
+    }
+    function setAuthHeaderState(loggedIn) {
+      if (!authLogoutButton) {
+        return;
+      }
+      if (loggedIn) {
+        authLogoutButton.classList.remove('hidden');
+      } else {
+        authLogoutButton.classList.add('hidden');
+      }
+    }
+    function setAuthMode(nextMode) {
+      authMode = nextMode === 'register' ? 'register' : 'login';
+      if (!authTitleElement || !authSubmitButton || !authPasswordElement || !authToggleElement) {
+        return;
+      }
+      clearAuthMessages();
+      if (authMode === 'register') {
+        authTitleElement.textContent = 'Create account';
+        authSubmitButton.textContent = 'Sign up';
+        authToggleElement.textContent = 'Already have an account?';
+        authPasswordElement.setAttribute('autocomplete', 'new-password');
+      } else {
+        authTitleElement.textContent = 'Play with account';
+        authSubmitButton.textContent = 'Sign in';
+        authToggleElement.textContent = 'Need to create an account?';
+        authPasswordElement.setAttribute('autocomplete', 'current-password');
+      }
+      authUsernameElement.focus();
+    }
+    function requestJson(path, init) {
+      var options = init || {};
+      if (!options.headers) {
+        options.headers = {};
+      }
+      if (options.body && typeof options.body !== 'string' && !(options.body instanceof FormData)) {
+        options.body = JSON.stringify(options.body);
+        options.headers['Content-Type'] = 'application/json';
+      }
+      return fetch(path, Object.assign({}, options, { credentials: 'include' }));
+    }
+    function trackAuthEvent(action, username) {
+      var trackFn = window.townrankerTrack;
+      if (typeof trackFn !== 'function') {
+        return;
+      }
+      try {
+        trackFn('form_submit', {
+          formName: 'Authentication',
+          formId: 'pokemon-auth-form',
+          formAction: action === 'signup' ? '/api/auth/register' : '/api/auth/login',
+          formIntent: action,
+          submitText: action === 'signup' ? 'Sign up' : 'Sign in',
+          formFieldNames: ['username', 'password'],
+          text: String(username || '').trim(),
+        });
+      } catch (error) {}
+    }
+    function syncAuthModeFromResponse(responseText, isRegister) {
+      if (responseText && responseText.user) {
+        authUserId = responseText.user.id;
+        authUsername = responseText.user.username;
+        gameHasUser = true;
+      }
+      if (isRegister && responseText && responseText.created) {
+        showAuthSuccess('Account created, loading your save files...');
+      }
+    }
+    function hydrateAuthFromSession() {
+      if (!authOverlayElement) {
+        return Promise.resolve(false);
+      }
+      return requestJson('/api/auth/me')
+        .then(function(response) {
+          if (!response.ok) {
+            return false;
+          }
+          return response.json();
+        })
+        .then(function(data) {
+          if (!data || !data.authenticated) {
+            throw new Error('No active session');
+          }
+          authUserId = data.user.id;
+          authUsername = data.user.username;
+          gameHasUser = true;
+          setAuthHeaderState(true);
+          hideAuthOverlay();
+          bootGame();
+          return true;
+        })
+        .catch(function() {
+          showAuthOverlay();
+          return false;
+        });
+    }
+    function bootGame() {
+      if (isGameBooted) {
+        return;
+      }
+      isGameBooted = true;
+      var scriptElement = document.createElement('script');
+      scriptElement.type = 'text/javascript';
+      scriptElement.async = true;
+      scriptElement.src = 'index.js?v=' + encodeURIComponent(assetVersion);
+      scriptElement.onerror = function() {
+        if (statusElement) {
+          statusElement.textContent = 'Failed to load game runtime.';
+        }
+      };
+      document.body.appendChild(scriptElement);
+    }
+    function handleAuthSuccess(responseData, registerMode) {
+      syncAuthModeFromResponse(responseData, registerMode);
+      setAuthHeaderState(true);
+      setGameStatus('Loading game...');
+      if (authSuccessElement) {
+        showAuthSuccess(registerMode ? 'Account ready. Starting game...' : 'Signed in. Starting game...');
+      }
+      hideAuthOverlay();
+      bootGame();
+    }
+    function doAuthSubmit(event) {
+      event.preventDefault();
+      if (authIsSubmitting) {
+        return;
+      }
+      var username = sanitizeText(authUsernameElement.value);
+      var password = sanitizeText(authPasswordElement.value);
+      if (!username || !password) {
+        showAuthError('Username and password are required.');
+        return;
+      }
+      authIsSubmitting = true;
+      setAuthMessage('error', '');
+      authSubmitButton.disabled = true;
+      var endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+      requestJson(endpoint, {
+        method: 'POST',
+        body: {
+          username: username,
+          password: password
+        }
+      })
+        .then(function(response) {
+          return response.json().then(function(data) {
+            return { ok: response.ok, status: response.status, data: data };
+          });
+        })
+        .then(function(result) {
+          if (!result.ok) {
+            throw new Error((result.data && result.data.error) || ('Request failed (' + result.status + ')'));
+          }
+          trackAuthEvent(authMode === 'register' ? 'signup' : 'login', username);
+          handleAuthSuccess(result.data, authMode === 'register');
+        })
+        .catch(function(error) {
+          showAuthError(error.message || 'Authentication failed.');
+        })
+        .finally(function() {
+          authIsSubmitting = false;
+          authSubmitButton.disabled = false;
+        });
+    }
+    function toggleAuthMode(event) {
+      event.preventDefault();
+      if (authIsSubmitting) {
+        return;
+      }
+      setAuthMode(authMode === 'login' ? 'register' : 'login');
+    }
+    function doAuthLogout(event) {
+      if (event && event.preventDefault) {
+        event.preventDefault();
+      }
+      if (!authLogoutButton || restartInProgress) {
+        return;
+      }
+      restartInProgress = true;
+      clearJoypadKeys();
+      if (saveSyncTimer) {
+        window.clearInterval(saveSyncTimer);
+        saveSyncTimer = null;
+      }
+      authLogoutButton.disabled = true;
+      authLogoutButton.textContent = 'Logging out';
+      if (typeof Module !== 'undefined' && Module.setStatus) {
+        Module.setStatus('Logging out...');
+      }
+      var logoutPosted = false;
+      var didReload = false;
+      function reloadOnce() {
+        if (didReload) {
+          return;
+        }
+        didReload = true;
+        window.location.assign('/');
+      }
+      function postLogout() {
+        if (logoutPosted) {
+          return;
+        }
+        logoutPosted = true;
+        requestJson('/api/auth/logout', { method: 'POST', keepalive: true })
+          .catch(function(error) {
+            console.error('Logout failed:', error);
+          })
+          .finally(function() {
+            authUserId = null;
+            authUsername = '';
+            authMode = 'login';
+            gameHasUser = false;
+            window.setTimeout(reloadOnce, 80);
+          });
+        window.setTimeout(reloadOnce, 1600);
+      }
+      try {
+        syncCloudSaveState(postLogout);
+        window.setTimeout(postLogout, 900);
+        window.setTimeout(reloadOnce, 2600);
+      } catch (error) {
+        console.error('Logout save sync failed:', error);
+        postLogout();
+      }
+    }
     function focusGameCanvas() {
       try {
         canvasElement.focus({ preventScroll: true });
@@ -319,7 +843,6 @@
     var touchButtonPressCounts = new WeakMap();
     var activeTouchPointers = {};
     var restartInProgress = false;
-    var gameRuntimeReady = false;
     function joypadKeyFromEvent(event) {
       switch (event.code) {
         case 'KeyZ': return 0;       // A
@@ -361,8 +884,18 @@
         event.stopImmediatePropagation();
       }
     }
-    function isLogoutButtonTarget(element) {
-      return !!(logoutButtonElement && element && element.closest && element.closest('#logout-button'));
+    function isEditableInputElement(element) {
+      if (!element || element.isContentEditable) {
+        return true;
+      }
+      if (element.tagName !== 'INPUT' && element.tagName !== 'TEXTAREA') {
+        return false;
+      }
+      var type = (element.getAttribute('type') || '').toLowerCase();
+      return type !== 'checkbox' && type !== 'radio' && type !== 'button' && type !== 'submit' && type !== 'range' && type !== 'file';
+    }
+    function isGameInputEvent(event) {
+      return isEditableInputElement(event.target);
     }
     function isTouchOptimizedLayout() {
       return window.matchMedia('(hover: none) and (pointer: coarse), (max-width: 820px)').matches;
@@ -380,9 +913,59 @@
         Module._wasm_flush_save();
       }
     }
-    var saveSyncInProgress = false;
-    var saveSyncQueued = false;
-    var saveSyncTimer = null;
+    function uint8ToBase64(bytes) {
+      var chunkSize = 12288;
+      var chunks = [];
+      for (var i = 0; i < bytes.length; i += chunkSize) {
+        chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize)));
+      }
+      return btoa(chunks.join(''));
+    }
+    function base64ToUint8(base64Value) {
+      if (!base64Value) {
+        return null;
+      }
+      try {
+        var binary = atob(base64Value);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+      } catch (error) {
+        console.warn('Failed to decode cloud save payload:', error);
+        return null;
+      }
+    }
+    function writeCloudSaveFile(path, base64Value) {
+      var bytes = base64ToUint8(base64Value);
+      if (!bytes) {
+        return false;
+      }
+      try {
+        try {
+          FS.unlink(path);
+        } catch (error) {
+          // File may not exist yet; it's fine.
+        }
+        FS.writeFile(path, bytes);
+        return true;
+      } catch (error) {
+        console.error('Could not write cloud save file:', path, error);
+        return false;
+      }
+    }
+    function readLocalSaveFileBase64(path) {
+      try {
+        var raw = FS.readFile(path);
+        if (!raw || !raw.length) {
+          return null;
+        }
+        return uint8ToBase64(raw);
+      } catch (error) {
+        return null;
+      }
+    }
     function mountSaveFileSystem() {
       try {
         FS.mkdir('/save');
@@ -398,6 +981,134 @@
           throw error;
         }
       }
+    }
+    function loadCloudSaves(done) {
+      if (!gameHasUser) {
+        if (done) {
+          done();
+        }
+        return;
+      }
+      requestJson('/api/save')
+        .then(function(response) {
+          if (response.status === 204 || response.status === 404) {
+            return null;
+          }
+          if (response.status === 401) {
+            return Promise.reject(new Error('No active session'));
+          }
+          if (!response.ok) {
+            return Promise.reject(new Error('Cloud save load failed (' + response.status + ')'));
+          }
+          return response.json();
+        })
+        .then(function(payload) {
+          if (!payload || !payload.files) {
+            return;
+          }
+          var wrote = false;
+          if (payload.files.sav !== undefined) {
+            wrote = writeCloudSaveFile('/save/baserom.sav', payload.files.sav) || wrote;
+          }
+          if (payload.files.sav2 !== undefined) {
+            wrote = writeCloudSaveFile('/save/baserom.sav2', payload.files.sav2) || wrote;
+          }
+          if (wrote) {
+            syncSaveFileSystem(false);
+          }
+        })
+        .catch(function(error) {
+          if (String(error && error.message).indexOf('No active session') === 0) {
+            gameHasUser = false;
+            setAuthHeaderState(false);
+            showAuthOverlay();
+          } else if (error) {
+            console.error('Cloud save load failed:', error);
+          }
+        })
+        .finally(function() {
+          if (done) {
+            done();
+          }
+        });
+    }
+    var cloudSaveSyncInProgress = false;
+    var cloudSaveSyncQueued = false;
+    function syncCloudSaveState(done) {
+      if (!gameHasUser || typeof FS === 'undefined' || typeof IDBFS === 'undefined') {
+        if (done) {
+          done(new Error('cloud sync unavailable'));
+        }
+        return;
+      }
+      if (cloudSaveSyncInProgress) {
+        cloudSaveSyncQueued = true;
+        if (done) {
+          done();
+        }
+        return;
+      }
+      cloudSaveSyncInProgress = true;
+      syncSaveFileSystem(false, function(error) {
+        if (error) {
+          cloudSaveSyncInProgress = false;
+          if (done) {
+            done(error);
+          }
+          return;
+        }
+        var payload = {};
+        var sav = readLocalSaveFileBase64('/save/baserom.sav');
+        var sav2 = readLocalSaveFileBase64('/save/baserom.sav2');
+        if (sav) {
+          payload.sav = sav;
+        }
+        if (sav2) {
+          payload.sav2 = sav2;
+        }
+        if (!Object.keys(payload).length) {
+          cloudSaveSyncInProgress = false;
+          if (done) {
+            done();
+          }
+          if (cloudSaveSyncQueued) {
+            cloudSaveSyncQueued = false;
+            syncCloudSaveState();
+          }
+          return;
+        }
+        requestJson('/api/save', { method: 'POST', body: payload })
+        .then(function(response) {
+          if (response.status === 401) {
+            gameHasUser = false;
+            setAuthHeaderState(false);
+            showAuthOverlay();
+            return Promise.reject(new Error('No active session'));
+          }
+            if (!response.ok) {
+              return Promise.reject(new Error('Cloud save upload failed (' + response.status + ')'));
+            }
+            lastCloudSaveSync = Date.now();
+            return response.json().catch(function() {
+              return null;
+            });
+          })
+          .catch(function(error) {
+            if (error && String(error.message) !== 'No active session') {
+              console.error('Cloud save sync failed:', error);
+            }
+          })
+          .finally(function() {
+            cloudSaveSyncInProgress = false;
+            if (done) {
+              done();
+            }
+            if (cloudSaveSyncQueued) {
+              cloudSaveSyncQueued = false;
+              syncCloudSaveState();
+            }
+          });
+      });
     }
     function syncSaveFileSystem(populate, done) {
       if (typeof FS === 'undefined' || typeof IDBFS === 'undefined') {
@@ -427,12 +1138,38 @@
         }
       });
     }
+    function bootstrapSaveSync(done) {
+      Module.addRunDependency('sync-local-save');
+      try {
+        mountSaveFileSystem();
+      } catch (error) {
+        Module.removeRunDependency('sync-local-save');
+        if (done) {
+          done(error);
+        }
+        return;
+      }
+      syncSaveFileSystem(true, function() {
+        Module.removeRunDependency('sync-local-save');
+        if (!gameHasUser) {
+          if (done) {
+            done();
+          }
+          return;
+        }
+        loadCloudSaves(function() {
+          if (done) {
+            done();
+          }
+        });
+      });
+    }
     function startSaveSyncTimer() {
       if (saveSyncTimer) {
         return;
       }
       saveSyncTimer = window.setInterval(function() {
-        syncSaveFileSystem(false);
+        syncCloudSaveState();
       }, 5000);
     }
     function restartGame() {
@@ -453,64 +1190,13 @@
         window.location.reload();
       }
       try {
-        syncSaveFileSystem(false, function() {
+        syncCloudSaveState(function() {
           window.setTimeout(reloadOnce, 50);
         });
         window.setTimeout(reloadOnce, 750);
       } catch (error) {
         console.error('Restart save sync failed:', error);
         reloadOnce();
-      }
-    }
-    function logoutGame() {
-      if (restartInProgress) {
-        return;
-      }
-      restartInProgress = true;
-      clearJoypadKeys();
-      if (saveSyncTimer) {
-        window.clearInterval(saveSyncTimer);
-        saveSyncTimer = null;
-      }
-      if (logoutButtonElement) {
-        logoutButtonElement.disabled = true;
-        logoutButtonElement.textContent = 'Logging out';
-      }
-      if (typeof Module !== 'undefined' && Module.setStatus) {
-        Module.setStatus('Logging out...');
-      }
-      var logoutPosted = false;
-      var didReload = false;
-      function reloadOnce() {
-        if (didReload) {
-          return;
-        }
-        didReload = true;
-        window.location.assign('/');
-      }
-      function postLogout() {
-        if (logoutPosted) {
-          return;
-        }
-        logoutPosted = true;
-        fetch('/api/auth/logout', {
-          method: 'POST',
-          credentials: 'same-origin',
-          keepalive: true
-        }).catch(function(error) {
-          console.error('Logout failed:', error);
-        }).finally(function() {
-          window.setTimeout(reloadOnce, 80);
-        });
-        window.setTimeout(reloadOnce, 1600);
-      }
-      try {
-        syncSaveFileSystem(false, postLogout);
-        window.setTimeout(postLogout, 900);
-        window.setTimeout(reloadOnce, 2600);
-      } catch (error) {
-        console.error('Logout save sync failed:', error);
-        postLogout();
       }
     }
     function setTouchKey(key, pressed) {
@@ -625,17 +1311,23 @@
         }, { capture: true });
       });
     }
-    if (logoutButtonElement) {
-      logoutButtonElement.addEventListener('click', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        logoutGame();
-      });
-    }
     canvasElement.addEventListener('pointerdown', focusGameCanvas);
-    window.addEventListener('load', focusGameCanvas);
+    window.addEventListener('load', function() {
+      if (authFormElement) {
+        authFormElement.addEventListener('submit', doAuthSubmit);
+      }
+      if (authLogoutButton) {
+        authLogoutButton.addEventListener('click', doAuthLogout);
+      }
+      if (authToggleElement) {
+        authToggleElement.addEventListener('click', toggleAuthMode);
+      }
+      setAuthMode('login');
+      focusGameCanvas();
+      hydrateAuthFromSession();
+    });
     window.addEventListener('keydown', function(event) {
-      if (isLogoutButtonTarget(event.target)) {
+      if (isGameInputEvent(event)) {
         return;
       }
       var key = joypadKeyFromEvent(event);
@@ -655,7 +1347,7 @@
       }
     }, { capture: true });
     window.addEventListener('keyup', function(event) {
-      if (isLogoutButtonTarget(event.target)) {
+      if (isGameInputEvent(event)) {
         return;
       }
       var key = joypadKeyFromEvent(event);
@@ -669,23 +1361,23 @@
     }, { capture: true });
     window.addEventListener('blur', clearJoypadKeys);
     window.addEventListener('pagehide', function() {
-      syncSaveFileSystem(false);
+      if (gameRuntimeReady) {
+        syncCloudSaveState();
+      } else {
+        syncSaveFileSystem(false);
+      }
     });
     document.addEventListener('visibilitychange', function() {
       if (document.hidden) {
         clearJoypadKeys();
-        syncSaveFileSystem(false);
+        syncCloudSaveState();
       }
     });
     var Module = {
       canvas: canvasElement,
       preRun: [function() {
         try {
-          mountSaveFileSystem();
-          Module.addRunDependency('sync-local-save');
-          syncSaveFileSystem(true, function() {
-            Module.removeRunDependency('sync-local-save');
-          });
+          bootstrapSaveSync(function() {});
         } catch (error) {
           console.error('Local save setup failed:', error);
         }
@@ -712,7 +1404,7 @@
       totalDependencies: 0,
       locateFile: function(path, prefix) {
         if (path === 'index.wasm' || path === 'index.data') {
-          return prefix + path + '?v=20260604-gbc-logout';
+          return prefix + path + '?v=' + assetVersion;
         }
         return prefix + path;
       },
@@ -735,6 +1427,6 @@
       console.error(message, source, lineno, colno, error);
     };
   </script>
-  {{{ SCRIPT }}}
+  <template id="game-runtime-script-template">{{{ SCRIPT }}}</template>
 </body>
 </html>
