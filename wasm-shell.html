@@ -191,8 +191,8 @@
         padding-top: max(42px, calc(env(safe-area-inset-top) + 36px));
       }
       canvas.emscripten {
-        width: min(101.3333dvh, 878px);
-        height: min(57dvh, 494px);
+        width: min(97.7778dvh, 848px);
+        height: min(55dvh, 477px);
         max-width: none;
         max-height: none;
       }
@@ -218,8 +218,8 @@
     @media (hover: none) and (pointer: coarse) and (orientation: portrait) and (max-height: 740px), (max-width: 520px) and (orientation: portrait) and (max-height: 740px) {
       .stage { padding-top: max(36px, calc(env(safe-area-inset-top) + 30px)); }
       canvas.emscripten {
-        width: min(92.4444dvh, 616px);
-        height: min(52dvh, 347px);
+        width: min(88.8889dvh, 594px);
+        height: min(50dvh, 334px);
       }
       .touch-dpad {
         bottom: max(70px, calc(env(safe-area-inset-bottom) + 58px));
@@ -611,7 +611,7 @@
       totalDependencies: 0,
       locateFile: function(path, prefix) {
         if (path === 'index.wasm' || path === 'index.data') {
-          return prefix + path + '?v=20260604-gbc-mobilefit';
+          return prefix + path + '?v=20260604-gbc-mobilefit2';
         }
         return prefix + path;
       },
